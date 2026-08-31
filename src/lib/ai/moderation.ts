@@ -39,6 +39,33 @@ function isAiModerationResponse(value: unknown): value is AiModerationResponse {
   );
 }
 
+function extractResponseText(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const response = payload as {
+    output_text?: unknown;
+    output?: Array<{
+      content?: Array<{
+        type?: string;
+        text?: unknown;
+      }>;
+    }>;
+  };
+
+  if (typeof response.output_text === "string") {
+    return response.output_text;
+  }
+
+  for (const item of response.output ?? []) {
+    for (const content of item.content ?? []) {
+      if (content.type === "output_text" && typeof content.text === "string") {
+        return content.text;
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function reviewBusinessSubmissionWithAi(
   input: BusinessSubmissionInput,
   ruleResult: ModerationResult
@@ -85,8 +112,11 @@ export async function reviewBusinessSubmissionWithAi(
 
     if (!response.ok) return null;
 
-    const payload = (await response.json()) as { output_text?: string };
-    const parsed = JSON.parse(payload.output_text ?? "{}") as unknown;
+    const payload = await response.json();
+    const responseText = extractResponseText(payload);
+    if (!responseText) return null;
+
+    const parsed = JSON.parse(responseText) as unknown;
 
     if (!isAiModerationResponse(parsed)) return null;
 
