@@ -1,5 +1,4 @@
 import type { BusinessSubmissionInput, ModerationDecision, ModerationResult } from "@/domain";
-
 interface AiModerationResponse {
   score: number;
   decision: ModerationDecision;
@@ -89,7 +88,7 @@ export async function reviewBusinessSubmissionWithAi(
           {
             role: "system",
             content:
-              "You triage Canadian small-business submissions for spam, fraud, unsupported claims, and moderation risk. Return JSON only. You must not verify Canadian ownership, Product of Canada, Made in Canada, or manufacturing claims. Strong Canadian-status claims require pending_review unless strong source evidence is supplied. Low-risk means it may be listed as community submitted, not verified."
+              "You triage Canadian small-business submissions for spam, fraud, unsupported claims, and moderation risk. Return JSON only. You must not verify Canadian ownership, Product of Canada, Made in Canada, or manufacturing claims. A .ca domain alone is not proof. A submitted website URL that appears to match the business name can support lower-risk publication as community submitted, but not verification. Strong Canadian-status claims require pending_review unless strong source evidence is supplied. Low-risk means it may be listed as community submitted, not verified."
           },
           {
             role: "user",

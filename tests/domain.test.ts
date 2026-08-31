@@ -195,6 +195,21 @@ describe("business submission moderation", () => {
     expect(result.score).toBeLessThan(40);
   });
 
+  it("uses a matching .ca website as lower-risk context without verification", () => {
+    const result = scoreBusinessSubmission({
+      businessName: "Fitmacro",
+      websiteUrl: "https://fitmacro.ca",
+      province: "ON",
+      category: "Tech",
+      whyItBelongs: "Canadian app studio.",
+      evidenceUrl: null
+    });
+
+    expect(result.decision).toBe("auto_publish");
+    expect(result.notes.join(" ")).toContain(".ca domain");
+    expect(result.notes.join(" ")).toContain("match the submitted business name");
+  });
+
   it("keeps strong Canadian-status claims pending for review", () => {
     const result = scoreBusinessSubmission({
       businessName: "Claimed Test Foods",

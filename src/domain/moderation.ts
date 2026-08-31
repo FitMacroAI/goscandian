@@ -56,22 +56,59 @@ function validUrl(value: string | null) {
   }
 }
 
+function normalizedBusinessTokens(name: string) {
+  return name
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 4);
+}
+
+function websiteSignals(input: BusinessSubmissionInput) {
+  if (!validUrl(input.websiteUrl)) {
+    return {
+      hasValidWebsite: false,
+      isDotCa: false,
+      matchesBusinessName: false
+    };
+  }
+
+  const hostname = new URL(input.websiteUrl ?? "").hostname.toLowerCase();
+  const tokens = normalizedBusinessTokens(input.businessName);
+
+  return {
+    hasValidWebsite: true,
+    isDotCa: hostname.endsWith(".ca"),
+    matchesBusinessName: tokens.some((token) => hostname.includes(token))
+  };
+}
+
 export function scoreBusinessSubmission(input: BusinessSubmissionInput): ModerationResult {
   const notes: string[] = [];
   let score = 15;
   const combined = `${input.businessName} ${input.category} ${input.whyItBelongs}`.toLowerCase();
+  const signals = websiteSignals(input);
 
-  if (!validUrl(input.websiteUrl)) {
+  if (!signals.hasValidWebsite) {
     score += 20;
     notes.push("No valid business website was provided.");
+  } else {
+    notes.push("A valid business website was provided.");
   }
 
-  if (!validUrl(input.evidenceUrl)) {
+  if (signals.isDotCa) {
+    notes.push("The website uses a .ca domain, which is useful context but not proof of ownership.");
+  }
+
+  if (signals.matchesBusinessName) {
+    notes.push("The website domain appears to match the submitted business name.");
+  }
+
+  if (!validUrl(input.evidenceUrl) && !signals.matchesBusinessName) {
     score += 10;
     notes.push("No valid evidence link was provided.");
   }
 
-  if (input.whyItBelongs.trim().length < 40) {
+  if (input.whyItBelongs.trim().length < 40 && !signals.matchesBusinessName) {
     score += 15;
     notes.push("The explanation is short and may need review.");
   }
