@@ -32,8 +32,11 @@ Fill in Supabase values when connecting a real project:
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 - `ENABLE_AI_MODERATION`
+- `ENABLE_AI_WEB_RESEARCH`
 
 Feature flags default off in `.env.example`.
+
+`ENABLE_AI_WEB_RESEARCH=true` lets the business-submission moderation step use OpenAI web search for low-risk submissions only. High-risk rule results are held without web research.
 
 ## Verification
 

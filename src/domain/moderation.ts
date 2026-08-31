@@ -163,3 +163,7 @@ export function combineModerationResults(
     notes: [...ruleResult.notes, ...aiResult.notes.map((note) => `AI: ${note}`)]
   };
 }
+
+export function shouldRunBusinessResearch(ruleResult: ModerationResult): boolean {
+  return ruleResult.decision !== "auto_hold" && ruleResult.score < 70;
+}

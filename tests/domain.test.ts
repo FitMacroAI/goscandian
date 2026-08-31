@@ -8,6 +8,7 @@ import {
   normalizeBarcode,
   scoreAlternatives,
   scoreBusinessSubmission,
+  shouldRunBusinessResearch,
   sortEvidenceByPriority
 } from "@/domain";
 import type { EvidenceSource, ProductSummary } from "@/domain";
@@ -272,5 +273,25 @@ describe("business submission moderation", () => {
     expect(combined.score).toBe(65);
     expect(combined.decision).toBe("pending_review");
     expect(combined.notes.some((note) => note.startsWith("AI:"))).toBe(true);
+  });
+
+  it("skips AI web research for submissions already held by rules", () => {
+    expect(
+      shouldRunBusinessResearch({
+        score: 80,
+        decision: "auto_hold",
+        notes: ["High risk."]
+      })
+    ).toBe(false);
+  });
+
+  it("allows AI web research for lower-risk business submissions", () => {
+    expect(
+      shouldRunBusinessResearch({
+        score: 25,
+        decision: "auto_publish",
+        notes: ["Low risk."]
+      })
+    ).toBe(true);
   });
 });
