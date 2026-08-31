@@ -1,0 +1,179 @@
+import { describe, expect, it } from "vitest";
+import {
+  calculateEvidenceConfidence,
+  isDuplicateChoice,
+  isSupportedBarcode,
+  mapProductClassification,
+  normalizeBarcode,
+  scoreAlternatives,
+  sortEvidenceByPriority
+} from "@/domain";
+import type { EvidenceSource, ProductSummary } from "@/domain";
+
+const officialEvidence: EvidenceSource = {
+  sourceType: "official_product_label",
+  confidence: "high",
+  isPrimarySource: true,
+  extractedClaim: "Label states made in Canada."
+};
+
+describe("barcode normalization", () => {
+  it("keeps only digits", () => {
+    expect(normalizeBarcode(" 123-45 67890 ")).toBe("1234567890");
+  });
+
+  it("accepts common UPC and EAN lengths", () => {
+    expect(isSupportedBarcode("12345678")).toBe(true);
+    expect(isSupportedBarcode("123456789012")).toBe(true);
+    expect(isSupportedBarcode("1234567890123")).toBe(true);
+    expect(isSupportedBarcode("123")).toBe(false);
+  });
+});
+
+describe("evidence priority and confidence", () => {
+  it("prioritizes official evidence over AI inference", () => {
+    const sorted = sortEvidenceByPriority([
+      {
+        sourceType: "ai_inference",
+        confidence: "high",
+        isPrimarySource: false,
+        extractedClaim: "Looks Canadian."
+      },
+      officialEvidence
+    ]);
+
+    expect(sorted[0]?.sourceType).toBe("official_product_label");
+  });
+
+  it("does not allow AI inference alone to produce high confidence", () => {
+    expect(
+      calculateEvidenceConfidence([
+        {
+          sourceType: "ai_inference",
+          confidence: "high",
+          isPrimarySource: false,
+          extractedClaim: "AI guess."
+        }
+      ])
+    ).toBe("low");
+  });
+});
+
+describe("classification mapping", () => {
+  it("marks strong sourced classifications as verified", () => {
+    expect(
+      mapProductClassification({
+        claimedStatus: "made_in_canada",
+        evidence: [officialEvidence]
+      })
+    ).toMatchObject({
+      canadaStatus: "made_in_canada",
+      verificationStatus: "verified",
+      confidence: "high"
+    });
+  });
+
+  it("keeps weak classifications unknown", () => {
+    expect(
+      mapProductClassification({
+        claimedStatus: "product_of_canada",
+        evidence: [
+          {
+            sourceType: "ai_inference",
+            confidence: "medium",
+            isPrimarySource: false,
+            extractedClaim: "Inferred from brand name."
+          }
+        ]
+      })
+    ).toMatchObject({
+      canadaStatus: "unknown",
+      verificationStatus: "needs_review"
+    });
+  });
+});
+
+describe("alternatives scoring", () => {
+  const source: ProductSummary = {
+    id: "source",
+    name: "Imported Snack",
+    categorySlugs: ["snacks"],
+    canadaStatus: "not_canadian",
+    verificationStatus: "verified",
+    confidence: "high",
+    smallBusiness: false,
+    dataQualityScore: 0.6,
+    tags: ["granola", "oats"]
+  };
+
+  it("ranks verified Canadian small business matches first", () => {
+    const [best] = scoreAlternatives(source, [
+      {
+        id: "best",
+        name: "Canadian Granola",
+        categorySlugs: ["snacks"],
+        canadaStatus: "product_of_canada",
+        verificationStatus: "verified",
+        confidence: "high",
+        smallBusiness: true,
+        dataQualityScore: 1,
+        tags: ["granola", "oats"]
+      },
+      {
+        id: "weak",
+        name: "Unknown Granola",
+        categorySlugs: ["snacks"],
+        canadaStatus: "unknown",
+        verificationStatus: "needs_review",
+        confidence: "unknown",
+        smallBusiness: true,
+        dataQualityScore: 0.2,
+        tags: ["granola"]
+      }
+    ]);
+
+    expect(best?.product.id).toBe("best");
+  });
+});
+
+describe("duplicate community-choice prevention", () => {
+  it("blocks repeated choices for the same actor and entity within the time window", () => {
+    const createdAt = new Date("2026-08-30T12:00:00Z");
+
+    expect(
+      isDuplicateChoice(
+        {
+          anonymousSessionId: "session-1",
+          productId: "product-1",
+          createdAt
+        },
+        [
+          {
+            anonymousSessionId: "session-1",
+            productId: "product-1",
+            createdAt: new Date("2026-08-30T11:30:00Z")
+          }
+        ]
+      )
+    ).toBe(true);
+  });
+
+  it("allows different entities", () => {
+    expect(
+      isDuplicateChoice(
+        {
+          anonymousSessionId: "session-1",
+          productId: "product-2",
+          createdAt: new Date("2026-08-30T12:00:00Z")
+        },
+        [
+          {
+            anonymousSessionId: "session-1",
+            productId: "product-1",
+            createdAt: new Date("2026-08-30T11:30:00Z")
+          }
+        ]
+      )
+    ).toBe(false);
+  });
+});
