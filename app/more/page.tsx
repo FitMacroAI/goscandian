@@ -3,6 +3,8 @@ import { featureFlags } from "@/config/feature-flags";
 
 const items = [
   ["Account", "/login"],
+  ["Suggest a Canadian business", "/suggest-business"],
+  ["Submit an unknown product", "/submit-product"],
   ["Contribution history", "/more/contributions"],
   ["I chose Canadian history", "/more/choices"],
   ["Privacy", "/privacy"],
