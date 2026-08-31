@@ -28,6 +28,10 @@ Fill in Supabase values when connecting a real project:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_ACCESS_TOKEN`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `ENABLE_AI_MODERATION`
 
 Feature flags default off in `.env.example`.
 

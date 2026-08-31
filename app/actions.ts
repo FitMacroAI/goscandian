@@ -4,8 +4,9 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { normalizeBarcode, scoreBusinessSubmission } from "@/domain";
+import { combineModerationResults, normalizeBarcode, scoreBusinessSubmission } from "@/domain";
 import { ADMIN_COOKIE_NAME, getAdminSessionState } from "@/lib/admin";
+import { reviewBusinessSubmissionWithAi } from "@/lib/ai/moderation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -174,14 +175,17 @@ export async function submitBusiness(formData: FormData) {
     evidenceUrl: readString(formData, "evidenceUrl")
   });
 
-  const moderation = scoreBusinessSubmission({
+  const submissionInput = {
     businessName: parsed.businessName,
     websiteUrl: parsed.websiteUrl,
     province: parsed.province,
     category: parsed.category,
     whyItBelongs: parsed.whyItBelongs,
     evidenceUrl: parsed.evidenceUrl
-  });
+  };
+  const ruleModeration = scoreBusinessSubmission(submissionInput);
+  const aiModeration = await reviewBusinessSubmissionWithAi(submissionInput, ruleModeration);
+  const moderation = combineModerationResults(ruleModeration, aiModeration);
   const supabase = requireSupabase();
 
   const { error } = await supabase.from("business_submissions").insert({

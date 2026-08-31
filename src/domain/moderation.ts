@@ -15,6 +15,18 @@ export interface ModerationResult {
   notes: string[];
 }
 
+const decisionRisk: Record<ModerationDecision, number> = {
+  auto_publish: 0,
+  pending_review: 1,
+  auto_hold: 2
+};
+
+function decisionFromScore(score: number): ModerationDecision {
+  if (score >= 70) return "auto_hold";
+  if (score >= 40) return "pending_review";
+  return "auto_publish";
+}
+
 const blockedTerms = [
   "casino",
   "gambling",
@@ -80,8 +92,7 @@ export function scoreBusinessSubmission(input: BusinessSubmissionInput): Moderat
   }
 
   const clampedScore = Math.max(0, Math.min(score, 100));
-  const decision =
-    clampedScore >= 70 ? "auto_hold" : clampedScore >= 40 ? "pending_review" : "auto_publish";
+  const decision = decisionFromScore(clampedScore);
 
   if (decision === "auto_publish") {
     notes.push("Low-risk submission can publish as community submitted, not verified.");
@@ -91,5 +102,27 @@ export function scoreBusinessSubmission(input: BusinessSubmissionInput): Moderat
     score: clampedScore,
     decision,
     notes
+  };
+}
+
+export function combineModerationResults(
+  ruleResult: ModerationResult,
+  aiResult: ModerationResult | null
+): ModerationResult {
+  if (!aiResult) return ruleResult;
+
+  const score = Math.max(ruleResult.score, aiResult.score);
+  const scoreDecision = decisionFromScore(score);
+  const decision =
+    decisionRisk[aiResult.decision] > decisionRisk[ruleResult.decision]
+      ? aiResult.decision
+      : decisionRisk[scoreDecision] > decisionRisk[ruleResult.decision]
+        ? scoreDecision
+        : ruleResult.decision;
+
+  return {
+    score,
+    decision,
+    notes: [...ruleResult.notes, ...aiResult.notes.map((note) => `AI: ${note}`)]
   };
 }

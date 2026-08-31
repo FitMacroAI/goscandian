@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateEvidenceConfidence,
+  combineModerationResults,
   isDuplicateChoice,
   isSupportedBarcode,
   mapProductClassification,
@@ -219,5 +220,42 @@ describe("business submission moderation", () => {
     });
 
     expect(result.decision).toBe("auto_hold");
+  });
+
+  it("does not let AI lower deterministic risk", () => {
+    const combined = combineModerationResults(
+      {
+        score: 75,
+        decision: "auto_hold",
+        notes: ["Rule risk."]
+      },
+      {
+        score: 10,
+        decision: "auto_publish",
+        notes: ["Looks fine."]
+      }
+    );
+
+    expect(combined.score).toBe(75);
+    expect(combined.decision).toBe("auto_hold");
+  });
+
+  it("lets AI raise moderation risk", () => {
+    const combined = combineModerationResults(
+      {
+        score: 20,
+        decision: "auto_publish",
+        notes: ["Low rule risk."]
+      },
+      {
+        score: 65,
+        decision: "pending_review",
+        notes: ["Website and business name appear mismatched."]
+      }
+    );
+
+    expect(combined.score).toBe(65);
+    expect(combined.decision).toBe("pending_review");
+    expect(combined.notes.some((note) => note.startsWith("AI:"))).toBe(true);
   });
 });
