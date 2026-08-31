@@ -1,8 +1,12 @@
 "use server";
 
+import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { normalizeBarcode } from "@/domain";
+import { ADMIN_COOKIE_NAME, getAdminSessionState } from "@/lib/admin";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const optionalUrl = z
@@ -36,6 +40,16 @@ const reportSchema = z.object({
   details: z.string().trim().min(10).max(1200)
 });
 
+const adminLoginSchema = z.object({
+  token: z.string().min(8)
+});
+
+const moderationUpdateSchema = z.object({
+  table: z.enum(["product_submissions", "business_submissions", "reports"]),
+  id: z.string().uuid(),
+  status: z.string().min(3).max(24)
+});
+
 function readString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : undefined;
@@ -47,6 +61,75 @@ function requireSupabase() {
     throw new Error("Supabase is not configured.");
   }
   return supabase;
+}
+
+async function requireAdminClient() {
+  const state = await getAdminSessionState();
+  if (!state.allowed) {
+    throw new Error("Admin access required.");
+  }
+
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    throw new Error("Supabase admin client is not configured.");
+  }
+
+  return supabase;
+}
+
+export async function adminLogin(formData: FormData) {
+  const parsed = adminLoginSchema.parse({
+    token: readString(formData, "token")
+  });
+  const expected = process.env.ADMIN_ACCESS_TOKEN;
+
+  if (!expected || parsed.token !== expected) {
+    redirect("/admin/login?error=invalid");
+  }
+
+  cookies().set(ADMIN_COOKIE_NAME, parsed.token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 8
+  });
+
+  redirect("/admin");
+}
+
+export async function adminLogout() {
+  cookies().delete(ADMIN_COOKIE_NAME);
+  redirect("/admin/login");
+}
+
+export async function updateModerationStatus(formData: FormData) {
+  const parsed = moderationUpdateSchema.parse({
+    table: readString(formData, "table"),
+    id: readString(formData, "id"),
+    status: readString(formData, "status")
+  });
+
+  const allowedStatuses =
+    parsed.table === "reports"
+      ? new Set(["open", "reviewing", "resolved", "rejected"])
+      : new Set(["pending", "approved", "rejected"]);
+
+  if (!allowedStatuses.has(parsed.status)) {
+    throw new Error("Invalid moderation status.");
+  }
+
+  const supabase = await requireAdminClient();
+  const { error } = await supabase
+    .from(parsed.table)
+    .update({ status: parsed.status })
+    .eq("id", parsed.id);
+
+  if (error) {
+    throw new Error("Could not update moderation status.");
+  }
+
+  revalidatePath("/admin");
 }
 
 export async function submitProduct(formData: FormData) {

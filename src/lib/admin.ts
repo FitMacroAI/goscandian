@@ -1,4 +1,7 @@
+import { cookies } from "next/headers";
 import { createSupabaseServerClient } from "./supabase/server";
+
+export const ADMIN_COOKIE_NAME = "goscandian_admin";
 
 export interface AdminSessionState {
   allowed: boolean;
@@ -7,6 +10,13 @@ export interface AdminSessionState {
 }
 
 export async function getAdminSessionState(): Promise<AdminSessionState> {
+  const adminToken = process.env.ADMIN_ACCESS_TOKEN;
+  const cookieToken = cookies().get(ADMIN_COOKIE_NAME)?.value;
+
+  if (adminToken && cookieToken === adminToken) {
+    return { allowed: true, role: "admin" };
+  }
+
   const supabase = createSupabaseServerClient();
 
   if (!supabase) {
