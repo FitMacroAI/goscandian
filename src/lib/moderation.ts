@@ -1,4 +1,4 @@
-import { createSupabaseAdminClient } from "./supabase/admin";
+import { createSupabaseAdminClient, getSupabaseAdminConfigStatus } from "./supabase/admin";
 
 export interface ProductSubmissionRow {
   id: string;
@@ -44,11 +44,12 @@ export async function getModerationQueues(): Promise<ModerationQueues> {
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
+    const status = getSupabaseAdminConfigStatus();
     return {
       productSubmissions: [],
       businessSubmissions: [],
       reports: [],
-      error: "Supabase service-role access is not configured."
+      error: `Supabase admin access is missing: ${status.missing.join(", ") || "unknown configuration"}.`
     };
   }
 
