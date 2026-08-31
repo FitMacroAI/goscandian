@@ -389,6 +389,16 @@ textarea {
   padding: 18px;
 }
 
+.success-state {
+  background: rgba(31, 111, 82, 0.12);
+  border: 1px solid rgba(31, 111, 82, 0.25);
+  border-radius: 8px;
+  color: var(--green);
+  font-weight: 800;
+  margin: 0;
+  padding: 18px;
+}
+
 @media (min-width: 900px) {
   .site-shell {
     padding-bottom: 0;

@@ -4,7 +4,11 @@ import { adminLogout, updateModerationStatus } from "../actions";
 import { getAdminSessionState } from "@/lib/admin";
 import { getModerationQueues } from "@/lib/moderation";
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams
+}: {
+  searchParams?: { updated?: string };
+}) {
   const state = await getAdminSessionState();
   const queues = state.allowed ? await getModerationQueues() : null;
 
@@ -28,6 +32,9 @@ export default async function AdminPage() {
           </div>
         ) : (
           <div className="stack">
+            {searchParams?.updated ? (
+              <p className="success-state">Moderation status updated to {searchParams.updated}.</p>
+            ) : null}
             {queues?.error ? <p className="empty-state">{queues.error}</p> : null}
             <QueueSection
               title="Product submissions"

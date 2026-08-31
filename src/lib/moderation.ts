@@ -57,16 +57,19 @@ export async function getModerationQueues(): Promise<ModerationQueues> {
     supabase
       .from("product_submissions")
       .select("id,barcode,product_name,brand_name,claimed_origin,source_url,status,created_at")
+      .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(20),
     supabase
       .from("business_submissions")
       .select("id,business_name,website_url,province,category,why_it_belongs,evidence_url,status,created_at")
+      .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(20),
     supabase
       .from("reports")
       .select("id,entity_type,entity_id,reason,details,status,created_at")
+      .in("status", ["open", "reviewing"])
       .order("created_at", { ascending: false })
       .limit(20)
   ]);

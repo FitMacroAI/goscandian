@@ -135,6 +135,7 @@ export async function updateModerationStatus(formData: FormData) {
   }
 
   revalidatePath("/admin");
+  redirect(`/admin?updated=${parsed.status}`);
 }
 
 export async function submitProduct(formData: FormData) {
