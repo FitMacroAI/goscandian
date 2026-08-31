@@ -59,6 +59,16 @@ export default async function AdminPage({
                   <h3>{item.business_name}</h3>
                   <p className="muted">{item.category ?? "Uncategorized"} · {item.province ?? "No province"}</p>
                   <p>{item.why_it_belongs ?? "No details provided."}</p>
+                  <p className="status-badge status-badge--needs_review">
+                    Score {item.moderation_score ?? "n/a"} · {item.moderation_decision ?? "not scored"}
+                  </p>
+                  {item.moderation_notes?.length ? (
+                    <ul className="plain-list">
+                      {item.moderation_notes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  ) : null}
                   <div className="actions">
                     {item.website_url ? <a className="button button--secondary" href={item.website_url}>Website</a> : null}
                     {item.evidence_url ? <a className="button button--secondary" href={item.evidence_url}>Evidence</a> : null}

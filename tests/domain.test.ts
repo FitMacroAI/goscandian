@@ -6,6 +6,7 @@ import {
   mapProductClassification,
   normalizeBarcode,
   scoreAlternatives,
+  scoreBusinessSubmission,
   sortEvidenceByPriority
 } from "@/domain";
 import type { EvidenceSource, ProductSummary } from "@/domain";
@@ -175,5 +176,48 @@ describe("duplicate community-choice prevention", () => {
         ]
       )
     ).toBe(false);
+  });
+});
+
+describe("business submission moderation", () => {
+  it("auto-publishes low-risk submissions only as community submitted candidates", () => {
+    const result = scoreBusinessSubmission({
+      businessName: "Harbour Test Studio",
+      websiteUrl: "https://example.com",
+      province: "ON",
+      category: "Gifts",
+      whyItBelongs: "A small local studio sharing a story about handmade gifts in Ontario.",
+      evidenceUrl: "https://example.com/about"
+    });
+
+    expect(result.decision).toBe("auto_publish");
+    expect(result.score).toBeLessThan(40);
+  });
+
+  it("keeps strong Canadian-status claims pending for review", () => {
+    const result = scoreBusinessSubmission({
+      businessName: "Claimed Test Foods",
+      websiteUrl: "https://example.com",
+      province: "ON",
+      category: "Food",
+      whyItBelongs: "This is 100% Canadian-owned and every product is made in Canada.",
+      evidenceUrl: null
+    });
+
+    expect(result.decision).toBe("pending_review");
+    expect(result.notes.join(" ")).toContain("strong Canadian-status claim");
+  });
+
+  it("auto-holds high-risk submissions", () => {
+    const result = scoreBusinessSubmission({
+      businessName: "Fast Crypto Loan Test",
+      websiteUrl: "https://example.xyz",
+      province: "ON",
+      category: "crypto",
+      whyItBelongs: "Guaranteed income through crypto loan offers.",
+      evidenceUrl: null
+    });
+
+    expect(result.decision).toBe("auto_hold");
   });
 });

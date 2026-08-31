@@ -20,6 +20,10 @@ export interface BusinessSubmissionRow {
   why_it_belongs: string | null;
   evidence_url: string | null;
   status: string;
+  moderation_score: number | null;
+  moderation_decision: string | null;
+  moderation_notes: string[] | null;
+  published_business_id: string | null;
   created_at: string;
 }
 
@@ -62,7 +66,7 @@ export async function getModerationQueues(): Promise<ModerationQueues> {
       .limit(20),
     supabase
       .from("business_submissions")
-      .select("id,business_name,website_url,province,category,why_it_belongs,evidence_url,status,created_at")
+      .select("id,business_name,website_url,province,category,why_it_belongs,evidence_url,status,moderation_score,moderation_decision,moderation_notes,published_business_id,created_at")
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(20),

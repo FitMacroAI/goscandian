@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { normalizeBarcode } from "@/domain";
+import { normalizeBarcode, scoreBusinessSubmission } from "@/domain";
 import { ADMIN_COOKIE_NAME, getAdminSessionState } from "@/lib/admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -174,14 +174,28 @@ export async function submitBusiness(formData: FormData) {
     evidenceUrl: readString(formData, "evidenceUrl")
   });
 
+  const moderation = scoreBusinessSubmission({
+    businessName: parsed.businessName,
+    websiteUrl: parsed.websiteUrl,
+    province: parsed.province,
+    category: parsed.category,
+    whyItBelongs: parsed.whyItBelongs,
+    evidenceUrl: parsed.evidenceUrl
+  });
   const supabase = requireSupabase();
+
   const { error } = await supabase.from("business_submissions").insert({
     business_name: parsed.businessName,
     website_url: parsed.websiteUrl,
     province: parsed.province.toUpperCase(),
     category: parsed.category,
     why_it_belongs: parsed.whyItBelongs,
-    evidence_url: parsed.evidenceUrl
+    evidence_url: parsed.evidenceUrl,
+    status: "pending",
+    moderation_score: moderation.score,
+    moderation_decision: moderation.decision,
+    moderation_notes: moderation.notes,
+    published_business_id: null
   });
 
   if (error) {

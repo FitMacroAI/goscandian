@@ -399,6 +399,13 @@ textarea {
   padding: 18px;
 }
 
+.plain-list {
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+  padding-left: 18px;
+}
+
 @media (min-width: 900px) {
   .site-shell {
     padding-bottom: 0;
