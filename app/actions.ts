@@ -58,7 +58,12 @@ function readString(formData: FormData, key: string) {
 function requireSupabase() {
   const supabase = createSupabaseServerClient();
   if (!supabase) {
-    throw new Error("Supabase is not configured.");
+    const missing = [
+      process.env.NEXT_PUBLIC_SUPABASE_URL ? null : "NEXT_PUBLIC_SUPABASE_URL",
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? null : "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    ].filter(Boolean);
+
+    throw new Error(`Supabase public write access is not configured: ${missing.join(", ")}.`);
   }
   return supabase;
 }
