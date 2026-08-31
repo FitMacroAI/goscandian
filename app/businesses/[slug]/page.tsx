@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StatusBadge } from "@/components/status-badge";
-import { businesses, products } from "@/lib/mock-data";
+import { getBusinessBySlug, getProducts } from "@/lib/data";
 
-export default function BusinessProfilePage({ params }: { params: { slug: string } }) {
-  const business = businesses.find((item) => item.slug === params.slug);
+export default async function BusinessProfilePage({ params }: { params: { slug: string } }) {
+  const [business, products] = await Promise.all([
+    getBusinessBySlug(params.slug),
+    getProducts()
+  ]);
   if (!business) notFound();
 
   return (

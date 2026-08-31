@@ -380,6 +380,15 @@ textarea {
   gap: 14px;
 }
 
+.empty-state {
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  margin: 0;
+  padding: 18px;
+}
+
 @media (min-width: 900px) {
   .site-shell {
     padding-bottom: 0;

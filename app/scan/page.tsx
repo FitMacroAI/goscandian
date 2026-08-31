@@ -24,15 +24,13 @@ export default function ScanPage() {
             </button>
           </div>
         </div>
-        <form className="form-surface">
+        <form className="form-surface" action="/search">
           <h2>Manual barcode lookup</h2>
           <label>
             <span className="eyebrow">UPC or EAN</span>
-            <input className="input" name="barcode" inputMode="numeric" placeholder="100000000001" />
+            <input className="input" name="q" inputMode="numeric" placeholder="100000000001" />
           </label>
-          <Link className="button" href="/products/development-product-001">
-            View test result
-          </Link>
+          <button className="button" type="submit">Look up barcode</button>
           <Link className="button button--secondary" href="/submit-product">
             Help identify a product
           </Link>

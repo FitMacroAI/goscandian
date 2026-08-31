@@ -2,10 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCardView } from "@/components/cards";
 import { StatusBadge } from "@/components/status-badge";
-import { products } from "@/lib/mock-data";
+import { getProductByRouteKey, getProducts } from "@/lib/data";
 
-export default function ProductProfilePage({ params }: { params: { slug: string } }) {
-  const product = products.find((item) => item.slug === params.slug);
+export default async function ProductProfilePage({ params }: { params: { slug: string } }) {
+  const [product, products] = await Promise.all([
+    getProductByRouteKey(params.slug),
+    getProducts()
+  ]);
   if (!product) notFound();
 
   const alternatives = products.filter((item) => item.slug !== product.slug).slice(0, 2);

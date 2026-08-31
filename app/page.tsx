@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { BusinessCardView, ProductCardView } from "@/components/cards";
-import { businesses, products } from "@/lib/mock-data";
+import { getBusinesses, getProducts } from "@/lib/data";
 
-export default function DiscoverPage() {
+export default async function DiscoverPage() {
+  const [businesses, products] = await Promise.all([getBusinesses(), getProducts()]);
+
   return (
     <div className="page">
       <section className="hero">
@@ -28,13 +30,17 @@ export default function DiscoverPage() {
       <section className="section">
         <div className="section__header">
           <h2>Featured small businesses</h2>
-          <span className="muted">Development fixtures</span>
+          <span className="muted">Evidence-aware listings</span>
         </div>
-        <div className="grid">
-          {businesses.map((business) => (
-            <BusinessCardView key={business.slug} business={business} />
-          ))}
-        </div>
+        {businesses.length ? (
+          <div className="grid">
+            {businesses.map((business) => (
+              <BusinessCardView key={business.slug} business={business} />
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No businesses have been published yet.</p>
+        )}
       </section>
 
       <section className="section">
@@ -44,11 +50,15 @@ export default function DiscoverPage() {
             How status works
           </Link>
         </div>
-        <div className="stack">
-          {products.map((product) => (
-            <ProductCardView key={product.slug} product={product} />
-          ))}
-        </div>
+        {products.length ? (
+          <div className="stack">
+            {products.map((product) => (
+              <ProductCardView key={product.slug} product={product} />
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No products have been added yet.</p>
+        )}
       </section>
     </div>
   );
